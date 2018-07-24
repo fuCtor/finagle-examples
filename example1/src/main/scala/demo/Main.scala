@@ -7,6 +7,7 @@ import com.twitter.finagle.loadbalancer.Custom
 import com.twitter.finagle.util.DefaultTimer
 import com.twitter.io.Buf
 import com.twitter.util._
+import com.twitter.conversions.time._
 
 object Main extends com.twitter.app.App {
 
@@ -33,9 +34,10 @@ object Main extends com.twitter.app.App {
 
     val client = Http.client.newService("local!8080")
 
-    def get(): Future[Response] = client(Request(Method.Get, "/")).foreach({ response =>
-      println(response.contentString)
-    }).delayed(Duration.fromSeconds(1)).flatMap(_ => get())
+    def get(): Future[Response] = client(Request(Method.Get, "/"))
+      .foreach(response => println(response.contentString))
+      .delayed(1.second)
+      .flatMap(_ => get())
 
     get()
 

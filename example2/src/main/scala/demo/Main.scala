@@ -1,10 +1,11 @@
 package demo
 
-import com.twitter.finagle.{Http, ListeningServer, Service}
+import com.twitter.conversions.time._
 import com.twitter.finagle.http.{Method, Request, Response, Status => HttpStatus}
 import com.twitter.finagle.util.DefaultTimer
+import com.twitter.finagle.{Http, ListeningServer, Service}
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Duration, Future}
+import com.twitter.util.{Await, Future}
 
 
 object Main extends com.twitter.app.App {
@@ -16,7 +17,7 @@ object Main extends com.twitter.app.App {
       val service: Service[Request, Response] = (_: Request) => {
         println("ping")
         Future(Response(HttpStatus.Ok).content(Buf.Utf8(s"Port $port")))
-          .delayed(Duration.fromSeconds(1))
+          .delayed(1.second)
           .mask({
             case _ =>
               println("Connection closed")
@@ -24,19 +25,22 @@ object Main extends com.twitter.app.App {
           })
       }
 
+
+
       Http.serve(s":$port", service)
     }
 
     val client = Http.client
       .withSessionQualifier.noFailFast
       .withSessionQualifier.noFailureAccrual
-      .withRequestTimeout(Duration.fromMilliseconds(250))
+      .withRequestTimeout(250.millis)
       .newService("localhost:8080", "demo_client")
 
-    def get(): Future[Any] = client(Request(Method.Get, "/")).foreach({ response =>
-      println(response.contentString)
-    }).rescue({ case _ => Future.Unit })
-      .delayed(Duration.fromSeconds(1)).ensure(get())
+    def get(): Future[Any] = client(Request(Method.Get, "/"))
+      .foreach(response => println(response.contentString))
+      .rescue({ case e => Future.value(println(e.getMessage)) })
+      .delayed(1.second)
+      .ensure(get())
 
     get()
 

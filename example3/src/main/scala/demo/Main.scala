@@ -1,11 +1,12 @@
 package demo
 
 import com.twitter.app.LoadService.Binding
-import com.twitter.finagle.{Http, ListeningServer, Resolver, Service}
+import com.twitter.conversions.time._
 import com.twitter.finagle.http.{Method, Request, Response, Status => HttpStatus}
 import com.twitter.finagle.util.DefaultTimer
+import com.twitter.finagle.{Http, ListeningServer, Resolver, Service}
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Duration, Future}
+import com.twitter.util.{Await, Future}
 
 object Config {
   val hostsCount = 1
@@ -33,11 +34,8 @@ object Main extends com.twitter.app.App {
       .foreach(resp => println(resp.contentString))
 
     def get(): Future[Any] = Future.collect(Seq.fill(Config.parallelRequests)(singleGet()))
-      .rescue({ case e =>
-        println(e)
-        Future.Unit
-      })
-      .delayed(Duration.fromSeconds(1)).ensure(get())
+      .rescue({ case e => Future.value(println(e)) })
+      .delayed(1.second).ensure(get())
 
     get()
   }
@@ -48,7 +46,7 @@ object Main extends com.twitter.app.App {
       val port = 8080 + i
       val service: Service[Request, Response] = (req: Request) =>
         Future(Response(HttpStatus.Ok).content(Buf.Utf8(s"${req.path} Port $port")))
-          .delayed(Duration.fromSeconds(1))
+          .delayed(1.second)
 
       Http.serve(s":$port", service)
     }
