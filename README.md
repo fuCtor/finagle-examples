@@ -11,3 +11,10 @@
 
 - Connection pool
 
+#### Example 4
+
+- Balancer behaviour test
+
+#### Example 5
+
+- Simple routing
