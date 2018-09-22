@@ -17,8 +17,12 @@
 
 #### Example 5
 
-- Simple routing
+- Simple routing, streaming and PubSub with monix
 
 #### Example 6
 
 - Simple TCP Echo server
+
+#### Example 7
+
+- Sharding
