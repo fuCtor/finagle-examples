@@ -25,14 +25,13 @@ object Main extends com.twitter.app.App {
       .withHash(sharder)
       .buildFactory()
 
-    val filter: SimpleFilter[Request, Response] = (request: Request, service: Service[Request, Response]) => {
+    val filter: SimpleFilter[Request, Response] = (request: Request, service: Service[Request, Response]) =>
       request.params.get("s") match {
         case Some(s) if s.nonEmpty =>
           request.ctx.update(shardField, s)
           service(request)
         case _ => Future.value(Response(Status.BadRequest))
       }
-    }
 
     val server = Http.server.serve(":9080", filter.andThen(factory))
 
