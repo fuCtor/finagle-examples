@@ -52,11 +52,12 @@ object DemoService {
 
   def ping(sec: Int): AsyncStream[String] = AsyncStream.fromFuture(Future("ping").delayed(sec.second)).concat(ping(sec))
 
-  def router: Service[Request, Response] = RoutingService.byMethodAndPathObject[Request] {
+  def router: Service[Request, Response] = RoutingService.byMethodAndPathObject[Request]({
     case Method.Get -> Root / "user" / Integer(id) ~ "json" => userServiceJson(id)
     case Method.Get -> Root / "user" / Integer(id) => userServicePlain(id)
     case _ -> Root / "echo"/ message => echoService(message)
     case Method.Get -> Root / "ping" / Integer(sec) => streamService(ping(sec))
-  }
+    case _ -> Root / (prefix @ "chat") / _  => PubSubService.router(Root / prefix)
+  })
 
 }
