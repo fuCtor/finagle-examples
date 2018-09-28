@@ -16,23 +16,24 @@ object Main extends com.twitter.app.App {
     Seq(new Binding(classOf[Resolver], new CustomResolver()))
   }
 
-  loadbalancer.defaultBalancerFactory(Custom.custom(1))
+  //Change group number and look n console
+  loadbalancer.defaultBalancerFactory(Custom.custom(group = 2))
 
   def main(): Unit = {
 
-    val servers: Seq[ListeningServer] = 8080 until 8085 map { port =>
+    val servers: Seq[ListeningServer] = 9080 until 9085 map { port =>
       val service: Service[Request, Response] = (_: Request) =>
         Future.value(Response(Status.Ok).content(Buf.Utf8(s"Port $port")))
 
       Http.serve(s":$port", service)
     }
 
-    Resolver.eval("local!8080") match {
+    Resolver.eval("local!9080") match {
       case Name.Bound(n) => n.changes.respond(println)
       case _ =>
     }
 
-    val client = Http.client.newService("local!8080")
+    val client = Http.client.newService("local!9080")
 
     def get(): Future[Response] = client(Request(Method.Get, "/"))
       .foreach(response => println(response.contentString))

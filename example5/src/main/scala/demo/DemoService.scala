@@ -4,6 +4,8 @@ import com.twitter.concurrent.AsyncStream
 import com.twitter.conversions.time._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http._
+import com.twitter.finagle.http.exp.Multipart
+import com.twitter.finagle.http.exp.MultipartDecoder
 import com.twitter.finagle.http.path._
 import com.twitter.finagle.http.service.RoutingService
 import com.twitter.finagle.util.DefaultTimer
@@ -48,6 +50,18 @@ object DemoService {
     Future(rep)
   }
 
+  val fileUpload: Service[Request, Response] = (req: Request) => {
+    MultipartDecoder.decode(req).flatMap(_.files.headOption).flatMap(_._2.headOption) match {
+      case Some(Multipart.InMemoryFileUpload(content, _, fileName, _)) =>
+        println(fileName)
+      case Some(Multipart.OnDiskFileUpload(file, _, fileName, _)) =>
+        println(fileName)
+      case _ =>
+
+    }
+    Future.value(Response(req.version, Status.Ok))
+  }
+
   val newLine: Buf = Buf.Utf8("\n")
 
   def ping(sec: Int): AsyncStream[String] = AsyncStream.fromFuture(Future("ping").delayed(sec.second)).concat(ping(sec))
@@ -56,6 +70,7 @@ object DemoService {
     case Method.Get -> Root / "user" / Integer(id) ~ "json" => userServiceJson(id)
     case Method.Get -> Root / "user" / Integer(id) => userServicePlain(id)
     case _ -> Root / "echo"/ message => echoService(message)
+    case Method.Post -> Root / "fileUpload" => fileUpload
     case Method.Get -> Root / "ping" / Integer(sec) => streamService(ping(sec))
     case _ -> Root / (prefix @ "chat") / _  => PubSubService.router(Root / prefix)
   })
