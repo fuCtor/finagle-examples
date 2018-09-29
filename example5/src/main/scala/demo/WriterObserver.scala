@@ -5,15 +5,15 @@ import com.twitter.util.Closable
 import monix.execution.Ack
 import monix.reactive.Observer
 
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 class WriterObserver private(writer: Writer with Closable) extends Observer[Buf] {
-  @volatile private var running: Boolean = true
-
   override def onNext(elem: Buf): Future[Ack] = {
-    writer.write(elem).onFailure(_ => running = false)
-    if (running) Future.successful(Ack.Continue)
-    else Future.successful(Ack.Stop)
+    val promise = Promise[Ack]
+    writer.write(elem)
+      .onFailure(_ => promise.success(Ack.Stop))
+      .onSuccess(_ => promise.success(Ack.Continue))
+    promise.future
   }
 
   override def onError(ex: Throwable): Unit = writer.fail(ex)
